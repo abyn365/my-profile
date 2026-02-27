@@ -16,7 +16,7 @@ A personal profile website with an admin panel for managing achievements. Built 
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/abyan-profile
+git clone https://github.com/abyn365/my-profile
 cd abyan-profile
 npm install
 ```
