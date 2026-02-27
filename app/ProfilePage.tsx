@@ -232,7 +232,13 @@ export default function ProfilePage({ achievements, grade, bio, birthday }: Prof
           <h1>Abyan</h1>
           <p className={styles.bio}>{bio}</p>
 
-          <div className={styles.statsRow} data-aos="fade-up" data-aos-delay="100">
+          <p className={styles.ageLine} data-aos="fade-up" data-aos-delay="100">
+            {mounted && (
+              <span suppressHydrationWarning>I'm {calcAge(birthday)} old</span>
+            )}
+          </p>
+
+          <div className={styles.statsRow} data-aos="fade-up" data-aos-delay="150">
             <div className={styles.statCard}>
               <span className={styles.statValue}>{calcYearsActive(achievements)}</span>
               <span className={styles.statLabel}>Years Active</span>
@@ -246,12 +252,6 @@ export default function ProfilePage({ achievements, grade, bio, birthday }: Prof
               <span className={styles.statLabel}>Current Grade</span>
             </div>
           </div>
-
-          <p className={styles.ageLine} data-aos="fade-up" data-aos-delay="150">
-            {mounted && (
-              <span suppressHydrationWarning>{calcAge(birthday)} old</span>
-            )}
-          </p>
 
           <a
             href="https://abyn.xyz"
