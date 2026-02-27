@@ -3,8 +3,26 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from './page.module.css'
 
+const DISCORD_USER_ID = '877018055815868426'
+
+const STATUS_ICONS: Record<string, string> = {
+  online: 'https://cdn3.emoji.gg/emojis/1514-online-blank.png',
+  idle: 'https://cdn3.emoji.gg/emojis/5204-idle-blank.png',
+  dnd: 'https://cdn3.emoji.gg/emojis/4431-dnd-blank.png',
+  offline: 'https://cdn3.emoji.gg/emojis/6610-invisible-offline-blank.png',
+}
+
+interface DiscordStatus {
+  isActive: boolean
+  status: 'online' | 'idle' | 'dnd' | 'offline'
+  activeDevice: string | null
+  isOnline: boolean
+  activity: string | null
+}
+
 interface ProfilePageProps {
   achievements: Record<string, string[]>
+  grade: string
 }
 
 function calcAge() {
@@ -42,10 +60,12 @@ function IconMail() {
   )
 }
 
-export default function ProfilePage({ achievements }: ProfilePageProps) {
+export default function ProfilePage({ achievements, grade }: ProfilePageProps) {
   const [mounted, setMounted] = useState(false)
   const [isLightMode, setIsLightMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [discordStatus, setDiscordStatus] = useState<DiscordStatus | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -55,6 +75,33 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
       setIsLightMode(true)
       document.body.classList.add('light-mode')
     }
+  }, [])
+
+  useEffect(() => {
+    const fetchDiscordData = async () => {
+      try {
+        const [avatarRes, statusRes] = await Promise.all([
+          fetch(`/api/discord-avatar`),
+          fetch('https://www.abyn.xyz/api/discord-status')
+        ])
+
+        if (avatarRes.ok) {
+          const { url } = await avatarRes.json()
+          setAvatarUrl(url)
+        }
+
+        if (statusRes.ok) {
+          const status = await statusRes.json()
+          setDiscordStatus(status)
+        }
+      } catch {
+        // silently fall back to initials avatar
+      }
+    }
+
+    fetchDiscordData()
+    const interval = setInterval(fetchDiscordData, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -132,6 +179,9 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
 
   const filteredYears = Object.keys(filteredAchievements).sort((a, b) => parseInt(b) - parseInt(a))
 
+  const status = discordStatus?.status ?? 'offline'
+  const statusIconUrl = STATUS_ICONS[status] ?? STATUS_ICONS.offline
+
   return (
     <>
       <div id="particles-js" className={styles.particles} />
@@ -153,13 +203,26 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
         <div className={styles.hero} data-aos="fade-down">
           <div className={styles.avatarWrapper}>
             <div className={styles.avatarRing}>
-              <div className={styles.avatarInitials}>A</div>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Abyan's Discord Avatar"
+                  className={styles.avatarImage}
+                />
+              ) : (
+                <div className={styles.avatarInitials}>A</div>
+              )}
             </div>
-            <span className={styles.onlineDot} title="Open to connect" />
+            <img
+              src={statusIconUrl}
+              alt={status}
+              className={styles.statusIcon}
+              title={`Discord: ${status}`}
+            />
           </div>
           <h1>Abyan</h1>
           <p className={styles.tagline}>
-            10th grader
+            {grade}
             {mounted && (
               <> · <span suppressHydrationWarning>{calcAge()}</span> old</>
             )}

@@ -4,6 +4,7 @@ import achievementsData from '@/data/achievements.json'
 const KEY_PREFIX = 'abyan-profile:'
 const ACHIEVEMENTS_KEY = `${KEY_PREFIX}achievements`
 const ADMIN_KEY = `${KEY_PREFIX}admin`
+const GRADE_KEY = `${KEY_PREFIX}grade`
 
 type AchievementsData = Record<string, string[]>
 interface AdminData {
@@ -189,4 +190,33 @@ export async function setAdmin(hashedPassword: string): Promise<boolean> {
 export async function isAdminSetup(): Promise<boolean> {
   const admin = await getAdmin()
   return !!admin && !!admin.hashedPassword
+}
+
+export async function getGrade(): Promise<string> {
+  const client = getRedis()
+
+  if (client) {
+    try {
+      const grade = await client.get<string>(GRADE_KEY)
+      if (grade) return grade
+    } catch (error) {
+      console.error('Redis read error:', error)
+    }
+  }
+
+  return '10th grader'
+}
+
+export async function setGrade(grade: string): Promise<boolean> {
+  const client = getRedis()
+
+  if (client) {
+    try {
+      await client.set(GRADE_KEY, grade)
+    } catch (error) {
+      console.error('Redis write error:', error)
+    }
+  }
+
+  return true
 }

@@ -1,8 +1,11 @@
-import { getAchievements } from '@/lib/achievements'
+import { getAchievements, getGrade } from '@/lib/achievements'
 import ProfilePage from './ProfilePage'
 
 export default async function Home() {
-  const achievements = await getAchievements()
-  
-  return <ProfilePage achievements={achievements} />
+  const [achievements, grade] = await Promise.all([
+    getAchievements(),
+    getGrade()
+  ])
+
+  return <ProfilePage achievements={achievements} grade={grade} />
 }

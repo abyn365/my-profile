@@ -22,6 +22,8 @@ export default function AdminPanel() {
   const [loginPassword, setLoginPassword] = useState('')
   const [newYear, setNewYear] = useState('2025')
   const [newAchievement, setNewAchievement] = useState('')
+  const [grade, setGrade] = useState('')
+  const [gradeInput, setGradeInput] = useState('')
 
   // Modal states
   const [editModal, setEditModal] = useState<{ year: string; index: number; text: string } | null>(null)
@@ -58,23 +60,32 @@ export default function AdminPanel() {
     if (!token) return
     
     try {
-      const res = await fetch('/api/admin/achievements', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const [achievementsRes, gradeRes] = await Promise.all([
+        fetch('/api/admin/achievements', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/grade', { headers: { Authorization: `Bearer ${token}` } })
+      ])
       
-      if (res.status === 401) {
+      if (achievementsRes.status === 401) {
         localStorage.removeItem('adminToken')
         setToken(null)
         setIsAuthenticated(false)
         return
       }
       
-      const data = await res.json()
-      if (data.success) {
-        setAchievements(data.data)
+      const achievementsData = await achievementsRes.json()
+      if (achievementsData.success) {
+        setAchievements(achievementsData.data)
+      }
+
+      if (gradeRes.ok) {
+        const gradeData = await gradeRes.json()
+        if (gradeData.success) {
+          setGrade(gradeData.data)
+          setGradeInput(gradeData.data)
+        }
       }
     } catch {
-      setError('Failed to load achievements')
+      setError('Failed to load data')
     }
   }, [token])
 
@@ -257,6 +268,40 @@ export default function AdminPanel() {
     }
   }
 
+  const handleGradeUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (!gradeInput.trim()) {
+      setError('Grade cannot be empty')
+      return
+    }
+
+    try {
+      const res = await fetch('/api/admin/grade', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ grade: gradeInput.trim() })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.message || 'Failed to update grade')
+        return
+      }
+
+      setGrade(data.data)
+      setSuccess('Grade updated!')
+      setTimeout(() => setSuccess(null), 3000)
+    } catch {
+      setError('Failed to update grade')
+    }
+  }
+
   const sortedYears = Object.keys(achievements).sort((a, b) => parseInt(b) - parseInt(a))
 
   if (loading) {
@@ -355,6 +400,32 @@ export default function AdminPanel() {
 
       {error && <div className={styles.error}>{error}</div>}
       {success && <div className={styles.success}>{success}</div>}
+
+      <div className={styles.addForm}>
+        <h3>Profile Settings</h3>
+        <form onSubmit={handleGradeUpdate}>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup} style={{ flex: 1 }}>
+              <label>Grade / School Year</label>
+              <input
+                type="text"
+                value={gradeInput}
+                onChange={(e) => setGradeInput(e.target.value)}
+                placeholder="e.g. 10th grader"
+                required
+              />
+            </div>
+            <button type="submit" className={styles.primaryBtn} style={{ width: 'auto', whiteSpace: 'nowrap' }}>
+              Save Grade
+            </button>
+          </div>
+          {grade && (
+            <p style={{ marginTop: 8, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              Current: <strong style={{ color: 'var(--accent-color)' }}>{grade}</strong>
+            </p>
+          )}
+        </form>
+      </div>
 
       <div className={styles.addForm}>
         <h3>Add New Achievement</h3>
