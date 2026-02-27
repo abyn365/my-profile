@@ -1,0 +1,15 @@
+{
+  "name": "abyan-profile",
+  "version": "1.0.0",
+  "description": "Abyan's Profile - Personal website",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "keywords": [
+    "profile",
+    "personal-website"
+  ],
+  "author": "Abyan",
+  "license": "GPL-3.0"
+}
