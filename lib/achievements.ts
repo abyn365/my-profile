@@ -19,11 +19,10 @@ function getRedis(): Redis | null {
   if (redis) return redis
 
   try {
-    if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-      redis = new Redis({
-        url: process.env.KV_REST_API_URL,
-        token: process.env.KV_REST_API_TOKEN
-      })
+    const url = process.env.profile_KV_REST_API_URL
+    const token = process.env.profile_KV_REST_API_TOKEN
+    if (url && token) {
+      redis = new Redis({ url, token })
       return redis
     }
   } catch {
