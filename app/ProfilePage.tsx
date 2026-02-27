@@ -12,17 +12,19 @@ const STATUS_ICONS: Record<string, string> = {
   offline: 'https://cdn3.emoji.gg/emojis/6610-invisible-offline-blank.png',
 }
 
-interface DiscordStatus {
-  isActive: boolean
-  status: 'online' | 'idle' | 'dnd' | 'offline'
-  activeDevice: string | null
-  isOnline: boolean
-  activity: string | null
+interface LanyardData {
+  discord_status: 'online' | 'idle' | 'dnd' | 'offline'
+  discord_user: {
+    id: string
+    avatar: string | null
+    username: string
+  }
 }
 
 interface ProfilePageProps {
   achievements: Record<string, string[]>
   grade: string
+  bio: string
 }
 
 function calcAge() {
@@ -40,6 +42,12 @@ function calcAge() {
     months += 12
   }
   return `${years} years, ${months} months, and ${days} days`
+}
+
+function getDiscordAvatar(userId: string, avatarId: string): string {
+  const isAnimated = avatarId.startsWith('a_')
+  const extension = isAnimated ? 'gif' : 'png'
+  return `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.${extension}?size=256`
 }
 
 function IconLink() {
@@ -60,12 +68,11 @@ function IconMail() {
   )
 }
 
-export default function ProfilePage({ achievements, grade }: ProfilePageProps) {
+export default function ProfilePage({ achievements, grade, bio }: ProfilePageProps) {
   const [mounted, setMounted] = useState(false)
   const [isLightMode, setIsLightMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [discordStatus, setDiscordStatus] = useState<DiscordStatus | null>(null)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [discordData, setDiscordData] = useState<LanyardData | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -78,29 +85,20 @@ export default function ProfilePage({ achievements, grade }: ProfilePageProps) {
   }, [])
 
   useEffect(() => {
-    const fetchDiscordData = async () => {
+    const fetchLanyard = async () => {
       try {
-        const [avatarRes, statusRes] = await Promise.all([
-          fetch(`/api/discord-avatar`),
-          fetch('https://www.abyn.xyz/api/discord-status')
-        ])
-
-        if (avatarRes.ok) {
-          const { url } = await avatarRes.json()
-          setAvatarUrl(url)
-        }
-
-        if (statusRes.ok) {
-          const status = await statusRes.json()
-          setDiscordStatus(status)
+        const res = await fetch(`https://api.lanyard.rest/v1/users/${DISCORD_USER_ID}`)
+        if (res.ok) {
+          const json = await res.json()
+          if (json.data) setDiscordData(json.data)
         }
       } catch {
-        // silently fall back to initials avatar
+        // silently ignore
       }
     }
 
-    fetchDiscordData()
-    const interval = setInterval(fetchDiscordData, 30000)
+    fetchLanyard()
+    const interval = setInterval(fetchLanyard, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -179,8 +177,9 @@ export default function ProfilePage({ achievements, grade }: ProfilePageProps) {
 
   const filteredYears = Object.keys(filteredAchievements).sort((a, b) => parseInt(b) - parseInt(a))
 
-  const status = discordStatus?.status ?? 'offline'
-  const statusIconUrl = STATUS_ICONS[status] ?? STATUS_ICONS.offline
+  const status = discordData?.discord_status ?? 'offline'
+  const avatarId = discordData?.discord_user?.avatar
+  const avatarUrl = avatarId ? getDiscordAvatar(DISCORD_USER_ID, avatarId) : null
 
   return (
     <>
@@ -214,7 +213,7 @@ export default function ProfilePage({ achievements, grade }: ProfilePageProps) {
               )}
             </div>
             <img
-              src={statusIconUrl}
+              src={STATUS_ICONS[status] ?? STATUS_ICONS.offline}
               alt={status}
               className={styles.statusIcon}
               title={`Discord: ${status}`}
@@ -227,9 +226,7 @@ export default function ProfilePage({ achievements, grade }: ProfilePageProps) {
               <> · <span suppressHydrationWarning>{calcAge()}</span> old</>
             )}
           </p>
-          <p className={styles.bio}>
-            Student, builder, and curious mind. Take a look around!
-          </p>
+          <p className={styles.bio}>{bio}</p>
           <a
             href="https://abyn.xyz"
             target="_blank"

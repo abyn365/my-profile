@@ -5,6 +5,7 @@ const KEY_PREFIX = 'abyan-profile:'
 const ACHIEVEMENTS_KEY = `${KEY_PREFIX}achievements`
 const ADMIN_KEY = `${KEY_PREFIX}admin`
 const GRADE_KEY = `${KEY_PREFIX}grade`
+const BIO_KEY = `${KEY_PREFIX}bio`
 
 type AchievementsData = Record<string, string[]>
 interface AdminData {
@@ -213,6 +214,35 @@ export async function setGrade(grade: string): Promise<boolean> {
   if (client) {
     try {
       await client.set(GRADE_KEY, grade)
+    } catch (error) {
+      console.error('Redis write error:', error)
+    }
+  }
+
+  return true
+}
+
+export async function getBio(): Promise<string> {
+  const client = getRedis()
+
+  if (client) {
+    try {
+      const bio = await client.get<string>(BIO_KEY)
+      if (bio) return bio
+    } catch (error) {
+      console.error('Redis read error:', error)
+    }
+  }
+
+  return 'Student, builder, and curious mind. Take a look around!'
+}
+
+export async function setBio(bio: string): Promise<boolean> {
+  const client = getRedis()
+
+  if (client) {
+    try {
+      await client.set(BIO_KEY, bio)
     } catch (error) {
       console.error('Redis write error:', error)
     }
