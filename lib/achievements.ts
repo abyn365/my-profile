@@ -15,14 +15,26 @@ let redis: Redis | null = null
 let cachedAchievements: AchievementsData | null = null
 let cachedAdmin: AdminData | null = null
 
+function resolveRedisCredentials(): { url: string; token: string } | null {
+  const urlKey = Object.keys(process.env).find((k) => k.endsWith('_KV_REST_API_URL'))
+  if (!urlKey) return null
+
+  const prefix = urlKey.slice(0, urlKey.indexOf('_KV_REST_API_URL'))
+  const tokenKey = `${prefix}_KV_REST_API_TOKEN`
+  const url = process.env[urlKey]
+  const token = process.env[tokenKey]
+
+  if (url && token) return { url, token }
+  return null
+}
+
 function getRedis(): Redis | null {
   if (redis) return redis
 
   try {
-    const url = process.env.profile_KV_REST_API_URL
-    const token = process.env.profile_KV_REST_API_TOKEN
-    if (url && token) {
-      redis = new Redis({ url, token })
+    const credentials = resolveRedisCredentials()
+    if (credentials) {
+      redis = new Redis(credentials)
       return redis
     }
   } catch {
