@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import styles from './page.module.css'
 
 interface ProfilePageProps {
@@ -10,6 +10,8 @@ interface ProfilePageProps {
 export default function ProfilePage({ achievements }: ProfilePageProps) {
   const [mounted, setMounted] = useState(false)
   const [isLightMode, setIsLightMode] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -22,34 +24,32 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && mounted) {
-      // Initialize AOS
       const initAOS = async () => {
         const AOS = (await import('aos')).default
-        AOS.init()
+        AOS.init({ once: true, duration: 700 })
       }
       initAOS()
 
-      // Initialize particles
       const initParticles = async () => {
         const particlesJS = (window as unknown as { particlesJS?: unknown }).particlesJS
         if (particlesJS) {
           ;(particlesJS as (id: string, config: unknown) => void)('particles-js', {
             particles: {
-              number: { value: 50, density: { enable: true, value_area: 800 } },
-              shape: { type: 'circle', stroke: { width: 0, color: isLightMode ? '#121212' : '#ffffff' } },
-              opacity: { value: 0.5, random: true, anim: { enable: true, speed: 1, opacity_min: 0.1 } },
-              size: { value: 3, random: true, anim: { enable: true, speed: 4, size_min: 0.1 } },
+              number: { value: 40, density: { enable: true, value_area: 900 } },
+              shape: { type: 'circle', stroke: { width: 0, color: '#000' } },
+              opacity: { value: 0.35, random: true, anim: { enable: true, speed: 1, opacity_min: 0.05 } },
+              size: { value: 2.5, random: true, anim: { enable: true, speed: 3, size_min: 0.1 } },
               line_linked: {
                 enable: true,
-                distance: 150,
-                color: isLightMode ? '#1976d2' : '#ffffff',
-                opacity: isLightMode ? 1 : 0.4,
+                distance: 160,
+                color: isLightMode ? '#1976d2' : '#4fc3f7',
+                opacity: isLightMode ? 0.5 : 0.25,
                 width: 1
               },
               move: {
                 enable: true,
-                speed: 3,
-                direction: 'random',
+                speed: 2,
+                direction: 'none',
                 random: true,
                 straight: false,
                 out_mode: 'out'
@@ -68,7 +68,6 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
         }
       }
 
-      // Load particles.js script
       const script = document.createElement('script')
       script.src = 'https://cdn.jsdelivr.net/npm/particles.js@2.0.0'
       script.onload = initParticles
@@ -82,7 +81,6 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
     localStorage.setItem('theme', !isLightMode ? 'light' : 'dark')
   }
 
-  // Calculate age
   const birthDate = new Date('2009-04-08')
   const now = new Date()
   let years = now.getFullYear() - birthDate.getFullYear()
@@ -102,13 +100,27 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
 
   const sortedYears = Object.keys(achievements).sort((a, b) => parseInt(b) - parseInt(a))
 
+  const filteredAchievements = sortedYears.reduce<Record<string, string[]>>((acc, year) => {
+    const filtered = achievements[year].filter((a) =>
+      a.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      year.includes(searchQuery)
+    )
+    if (filtered.length > 0) acc[year] = filtered
+    return acc
+  }, {})
+
+  const filteredYears = Object.keys(filteredAchievements).sort((a, b) => parseInt(b) - parseInt(a))
+
   return (
     <>
       <div id="particles-js" className={styles.particles}></div>
 
       <nav className={styles.navbar}>
-        <a href="https://blog.abyn.xyz" target="_blank" rel="noopener noreferrer">Blog</a>
-        <a href="https://note.abyn.xyz" target="_blank" rel="noopener noreferrer">Note</a>
+        <span className={styles.navBrand}>abyn.xyz</span>
+        <div className={styles.navLinks}>
+          <a href="https://blog.abyn.xyz" target="_blank" rel="noopener noreferrer">Blog</a>
+          <a href="https://note.abyn.xyz" target="_blank" rel="noopener noreferrer">Note</a>
+        </div>
       </nav>
 
       <button
@@ -116,68 +128,88 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
         onClick={toggleTheme}
         aria-label="Toggle Dark/Light Mode"
       >
-        🌓
+        {isLightMode ? '🌙' : '☀️'}
       </button>
 
       <main className={styles.container}>
-        <h1 data-aos="fade-down">Abyan&apos;s Profile</h1>
-        <p data-aos="fade-up" data-aos-delay="200">
-          Hi! My name is Abyan. I&apos;m a 10th grader, and I&apos;m {liveCounter} old. Take a look at my profile!
-        </p>
-
-        <div className={styles.mediaContainer}>
-          <iframe
-            src="https://www.instagram.com/abyb.1/embed"
-            className={`${styles.instagramEmbed} ${isLightMode ? styles.light : ''}`}
-            frameBorder="0"
-            scrolling="no"
-            allowTransparency
+        <div className={styles.hero} data-aos="fade-down">
+          <div className={styles.avatarWrapper}>
+            <div className={styles.avatarRing}>
+              <div className={styles.avatarInitials}>A</div>
+            </div>
+            <span className={styles.onlineDot} title="Open to connect" />
+          </div>
+          <h1>Abyan</h1>
+          <p className={styles.tagline}>10th grader · {liveCounter} old</p>
+          <p className={styles.bio}>
+            Student, builder, and curious mind. Take a look around!
+          </p>
+          <a
+            href="https://abyn.xyz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.biolinksButton}
             data-aos="zoom-in"
-            data-aos-delay="400"
-          />
-          <img
-            src="https://i.imgur.com/UUigaWa.jpeg"
-            alt="Abyan's Image"
-            className={`${styles.profileImage} ${isLightMode ? styles.light : ''}`}
-            loading="lazy"
-            data-aos="zoom-in"
-            data-aos-delay="600"
-          />
+            data-aos-delay="200"
+          >
+            <span className={styles.biolinksIcon}>🔗</span>
+            Visit my links
+          </a>
         </div>
 
-        <div className={styles.searchContainer} data-aos="zoom-in-up" data-aos-delay="200">
+        <div className={styles.divider} data-aos="fade-up" data-aos-delay="100" />
+
+        <div className={styles.searchContainer} data-aos="fade-up" data-aos-delay="150">
+          <span className={styles.searchIcon}>🔍</span>
           <input
+            ref={searchRef}
             type="text"
-            id="achievement-search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search achievements..."
             aria-label="Search Achievements"
-            className={isLightMode ? styles.light : ''}
           />
-          <span className={styles.searchIcon}>🔍</span>
+          {searchQuery && (
+            <button
+              className={styles.clearSearch}
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
-        <h2 data-aos="fade-up" data-aos-delay="800">Achievements</h2>
-        <div className={styles.achievements} data-aos="fade-up" data-aos-delay="1000">
-          {sortedYears.map((year) => (
-            <div key={year} className={styles.yearGroup}>
-              <div className={styles.yearTitle}>{year}</div>
-              {achievements[year].map((achievement, index) => (
-                <div key={index} className={styles.achievement}>
-                  {achievement}
+        <h2 data-aos="fade-up" data-aos-delay="200">Achievements</h2>
+
+        {filteredYears.length === 0 ? (
+          <p className={styles.noResults} data-aos="fade-up">No achievements found.</p>
+        ) : (
+          <div className={styles.achievements} data-aos="fade-up" data-aos-delay="250">
+            {filteredYears.map((year) => (
+              <div key={year} className={styles.yearGroup}>
+                <div className={styles.yearTitle}>
+                  <span className={styles.yearBadge}>{year}</span>
                 </div>
-              ))}
-            </div>
-          ))}
-        </div>
+                {filteredAchievements[year].map((achievement, index) => (
+                  <div key={index} className={styles.achievement}>
+                    <span className={styles.achievementDot} />
+                    {achievement}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
       <a
         href="mailto:abyn@abyn.xyz"
         className={styles.contactButton}
-        data-aos="fade-up"
-        data-aos-delay="1200"
+        data-aos="fade-left"
+        data-aos-delay="300"
       >
-        Contact Me
+        ✉ Contact Me
       </a>
 
       <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
