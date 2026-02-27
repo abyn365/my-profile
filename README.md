@@ -50,7 +50,7 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ### 5. Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/abyan-profile)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/abyn365/my-profile)
 
 ## Enable Persistent Storage (Recommended)
 
