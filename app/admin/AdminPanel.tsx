@@ -26,6 +26,8 @@ export default function AdminPanel() {
   const [gradeInput, setGradeInput] = useState('')
   const [bio, setBio] = useState('')
   const [bioInput, setBioInput] = useState('')
+  const [birthday, setBirthday] = useState('')
+  const [birthdayInput, setBirthdayInput] = useState('')
 
   // Achievement form states
   const [newYear, setNewYear] = useState(String(new Date().getFullYear()))
@@ -65,10 +67,11 @@ export default function AdminPanel() {
     if (!token) return
 
     try {
-      const [achievementsRes, gradeRes, bioRes] = await Promise.all([
+      const [achievementsRes, gradeRes, bioRes, birthdayRes] = await Promise.all([
         fetch('/api/admin/achievements', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/admin/grade', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/admin/bio', { headers: { Authorization: `Bearer ${token}` } })
+        fetch('/api/admin/bio', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/admin/birthday', { headers: { Authorization: `Bearer ${token}` } })
       ])
 
       if (achievementsRes.status === 401) {
@@ -94,6 +97,14 @@ export default function AdminPanel() {
         if (bioData.success) {
           setBio(bioData.data)
           setBioInput(bioData.data)
+        }
+      }
+
+      if (birthdayRes.ok) {
+        const birthdayData = await birthdayRes.json()
+        if (birthdayData.success) {
+          setBirthday(birthdayData.data)
+          setBirthdayInput(birthdayData.data)
         }
       }
     } catch {
@@ -186,6 +197,23 @@ export default function AdminPanel() {
       setBio(data.data)
       notify('Bio updated!')
     } catch { setError('Failed to update bio') }
+  }
+
+  const handleBirthdayUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (!birthdayInput.trim()) { setError('Birthday cannot be empty'); return }
+    try {
+      const res = await fetch('/api/admin/birthday', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ birthday: birthdayInput.trim() })
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.message || 'Failed to update birthday'); return }
+      setBirthday(data.data)
+      notify('Birthday updated!')
+    } catch { setError('Failed to update birthday') }
   }
 
   const handleAddAchievement = async (e: React.FormEvent) => {
@@ -387,6 +415,18 @@ export default function AdminPanel() {
                   onChange={(e) => setBioInput(e.target.value)}
                   placeholder="Write a short bio..."
                   rows={2}
+                  required
+                />
+              </div>
+              <button type="submit" className={styles.btnSave}>Save</button>
+            </form>
+            <form onSubmit={handleBirthdayUpdate} className={styles.inlineForm} style={{ marginTop: '16px' }}>
+              <div className={styles.field}>
+                <label>Birthday (YYYY-MM-DD)</label>
+                <input
+                  type="date"
+                  value={birthdayInput}
+                  onChange={(e) => setBirthdayInput(e.target.value)}
                   required
                 />
               </div>
