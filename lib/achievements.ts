@@ -1,8 +1,9 @@
 import { Redis } from '@upstash/redis'
 import achievementsData from '@/data/achievements.json'
 
-const ACHIEVEMENTS_KEY = 'achievements'
-const ADMIN_KEY = 'admin'
+const KEY_PREFIX = 'abyan-profile:'
+const ACHIEVEMENTS_KEY = `${KEY_PREFIX}achievements`
+const ADMIN_KEY = `${KEY_PREFIX}admin`
 
 type AchievementsData = Record<string, string[]>
 interface AdminData {
