@@ -7,6 +7,23 @@ interface ProfilePageProps {
   achievements: Record<string, string[]>
 }
 
+function calcAge() {
+  const birthDate = new Date('2009-04-08')
+  const now = new Date()
+  let years = now.getFullYear() - birthDate.getFullYear()
+  let months = now.getMonth() - birthDate.getMonth()
+  let days = now.getDate() - birthDate.getDate()
+  if (days < 0) {
+    months -= 1
+    days += new Date(now.getFullYear(), now.getMonth(), 0).getDate()
+  }
+  if (months < 0) {
+    years -= 1
+    months += 12
+  }
+  return `${years} years, ${months} months, and ${days} days`
+}
+
 export default function ProfilePage({ achievements }: ProfilePageProps) {
   const [mounted, setMounted] = useState(false)
   const [isLightMode, setIsLightMode] = useState(false)
@@ -23,87 +40,73 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
   }, [])
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && mounted) {
-      const initAOS = async () => {
-        const AOS = (await import('aos')).default
-        AOS.init({ once: true, duration: 700 })
-      }
-      initAOS()
+    if (!mounted) return
 
-      const initParticles = async () => {
-        const particlesJS = (window as unknown as { particlesJS?: unknown }).particlesJS
-        if (particlesJS) {
-          ;(particlesJS as (id: string, config: unknown) => void)('particles-js', {
-            particles: {
-              number: { value: 40, density: { enable: true, value_area: 900 } },
-              shape: { type: 'circle', stroke: { width: 0, color: '#000' } },
-              opacity: { value: 0.35, random: true, anim: { enable: true, speed: 1, opacity_min: 0.05 } },
-              size: { value: 2.5, random: true, anim: { enable: true, speed: 3, size_min: 0.1 } },
-              line_linked: {
-                enable: true,
-                distance: 160,
-                color: isLightMode ? '#1976d2' : '#4fc3f7',
-                opacity: isLightMode ? 0.5 : 0.25,
-                width: 1
-              },
-              move: {
-                enable: true,
-                speed: 2,
-                direction: 'none',
-                random: true,
-                straight: false,
-                out_mode: 'out'
-              }
-            },
-            interactivity: {
-              detect_on: 'window',
-              events: {
-                onhover: { enable: true, mode: 'grab' },
-                onclick: { enable: true, mode: 'push' },
-                resize: true
-              }
-            },
-            retina_detect: true
-          })
-        }
-      }
-
-      const script = document.createElement('script')
-      script.src = 'https://cdn.jsdelivr.net/npm/particles.js@2.0.0'
-      script.onload = initParticles
-      document.body.appendChild(script)
+    const initAOS = async () => {
+      const AOS = (await import('aos')).default
+      AOS.init({ once: true, duration: 700 })
     }
+    initAOS()
+
+    const initParticles = async () => {
+      const particlesJS = (window as unknown as { particlesJS?: unknown }).particlesJS
+      if (particlesJS) {
+        ;(particlesJS as (id: string, config: unknown) => void)('particles-js', {
+          particles: {
+            number: { value: 40, density: { enable: true, value_area: 900 } },
+            shape: { type: 'circle', stroke: { width: 0, color: '#000' } },
+            opacity: { value: 0.35, random: true, anim: { enable: true, speed: 1, opacity_min: 0.05 } },
+            size: { value: 2.5, random: true, anim: { enable: true, speed: 3, size_min: 0.1 } },
+            line_linked: {
+              enable: true,
+              distance: 160,
+              color: isLightMode ? '#1976d2' : '#4fc3f7',
+              opacity: isLightMode ? 0.5 : 0.25,
+              width: 1
+            },
+            move: {
+              enable: true,
+              speed: 2,
+              direction: 'none',
+              random: true,
+              straight: false,
+              out_mode: 'out'
+            }
+          },
+          interactivity: {
+            detect_on: 'window',
+            events: {
+              onhover: { enable: true, mode: 'grab' },
+              onclick: { enable: true, mode: 'push' },
+              resize: true
+            }
+          },
+          retina_detect: true
+        })
+      }
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/particles.js@2.0.0'
+    script.onload = initParticles
+    document.body.appendChild(script)
   }, [mounted, isLightMode])
 
   const toggleTheme = () => {
-    setIsLightMode(!isLightMode)
-    document.body.classList.toggle('light-mode')
-    localStorage.setItem('theme', !isLightMode ? 'light' : 'dark')
+    setIsLightMode((prev) => {
+      const next = !prev
+      document.body.classList.toggle('light-mode', next)
+      localStorage.setItem('theme', next ? 'light' : 'dark')
+      return next
+    })
   }
-
-  const birthDate = new Date('2009-04-08')
-  const now = new Date()
-  let years = now.getFullYear() - birthDate.getFullYear()
-  let months = now.getMonth() - birthDate.getMonth()
-  let days = now.getDate() - birthDate.getDate()
-
-  if (days < 0) {
-    months -= 1
-    days += new Date(now.getFullYear(), now.getMonth(), 0).getDate()
-  }
-  if (months < 0) {
-    years -= 1
-    months += 12
-  }
-
-  const liveCounter = `${years} years, ${months} months, and ${days} days`
 
   const sortedYears = Object.keys(achievements).sort((a, b) => parseInt(b) - parseInt(a))
 
   const filteredAchievements = sortedYears.reduce<Record<string, string[]>>((acc, year) => {
-    const filtered = achievements[year].filter((a) =>
-      a.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      year.includes(searchQuery)
+    const q = searchQuery.toLowerCase()
+    const filtered = achievements[year].filter(
+      (a) => a.toLowerCase().includes(q) || year.includes(q)
     )
     if (filtered.length > 0) acc[year] = filtered
     return acc
@@ -113,22 +116,19 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
 
   return (
     <>
-      <div id="particles-js" className={styles.particles}></div>
+      <div id="particles-js" className={styles.particles} />
 
       <nav className={styles.navbar}>
         <span className={styles.navBrand}>abyn.xyz</span>
-        <div className={styles.navLinks}>
-          <a href="https://blog.abyn.xyz" target="_blank" rel="noopener noreferrer">Blog</a>
-          <a href="https://note.abyn.xyz" target="_blank" rel="noopener noreferrer">Note</a>
-        </div>
       </nav>
 
       <button
         className={styles.themeToggle}
         onClick={toggleTheme}
         aria-label="Toggle Dark/Light Mode"
+        suppressHydrationWarning
       >
-        {isLightMode ? '🌙' : '☀️'}
+        {mounted ? (isLightMode ? '🌙' : '☀️') : '🌓'}
       </button>
 
       <main className={styles.container}>
@@ -140,7 +140,12 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
             <span className={styles.onlineDot} title="Open to connect" />
           </div>
           <h1>Abyan</h1>
-          <p className={styles.tagline}>10th grader · {liveCounter} old</p>
+          <p className={styles.tagline}>
+            10th grader
+            {mounted && (
+              <> · <span suppressHydrationWarning>{calcAge()}</span> old</>
+            )}
+          </p>
           <p className={styles.bio}>
             Student, builder, and curious mind. Take a look around!
           </p>
@@ -169,7 +174,7 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
             placeholder="Search achievements..."
             aria-label="Search Achievements"
           />
-          {searchQuery && (
+          {mounted && searchQuery && (
             <button
               className={styles.clearSearch}
               onClick={() => setSearchQuery('')}
