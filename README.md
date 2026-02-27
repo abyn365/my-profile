@@ -1,6 +1,6 @@
 # Abyan's Profile
 
-A personal profile website with an admin panel for managing achievements. Built for Vercel deployment.
+A personal profile website with an admin panel for managing achievements. Built with Next.js 14 App Router.
 
 ## Features
 
@@ -8,18 +8,22 @@ A personal profile website with an admin panel for managing achievements. Built 
 - 🔐 Secure admin panel with JWT authentication
 - 🔒 Password hashing with bcrypt (12 salt rounds)
 - 📱 Responsive design with dark/light mode
-- ⚡ Fast serverless API endpoints
+- ⚡ Next.js App Router with Server Components
 - 🎨 Animated particles and smooth transitions
 
 ## Quick Start
 
-### 1. Deploy to Vercel
+### 1. Clone and Install
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/abyan-profile)
+```bash
+git clone https://github.com/yourusername/abyan-profile
+cd abyan-profile
+npm install
+```
 
 ### 2. Set Environment Variables
 
-In your Vercel project settings, add:
+Create `.env.local`:
 
 ```
 JWT_SECRET=your-strong-random-secret-key
@@ -30,13 +34,25 @@ Generate a strong secret:
 openssl rand -base64 32
 ```
 
-### 3. Setup Admin Account
+### 3. Run Development Server
 
-1. Visit `/admin` after deployment
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
+
+### 4. Setup Admin Account
+
+1. Visit `/admin`
 2. Create your admin password (must meet security requirements)
 3. Login with your password
 
-### 4. Enable Persistent Storage (Recommended)
+### 5. Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/abyan-profile)
+
+## Enable Persistent Storage (Recommended)
 
 Without persistent storage, achievements reset on each deployment.
 
@@ -87,64 +103,45 @@ Without persistent storage, achievements reset on each deployment.
 - **Authorization Header**: Bearer token required for admin endpoints
 - **Input Validation**: All inputs are validated server-side
 
-## Local Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-```
-
-## Adding Achievements
-
-### Via Admin Panel
-
-1. Go to `/admin`
-2. Login with your password
-3. Use the form to add new achievements
-4. Click on a year to expand/collapse
-5. Edit or delete existing achievements
-
-### Via API
-
-```bash
-# Login first
-TOKEN=$(curl -s -X POST https://your-domain/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"password":"your-password"}' | jq -r '.token')
-
-# Add achievement
-curl -X POST https://your-domain/api/admin/achievements \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{"year":"2025","achievement":"New Achievement, 1 Januari 2025"}'
-```
-
-## File Structure
+## Project Structure
 
 ```
-├── api/
-│   ├── index.js           # Main profile page
-│   ├── achievements.js    # Public achievements API
-│   ├── auth/
-│   │   ├── login.js       # Login endpoint
-│   │   ├── setup.js       # Admin setup endpoint
-│   │   └── status.js      # Auth status check
+├── app/
+│   ├── layout.tsx          # Root layout
+│   ├── page.tsx            # Profile page (Server Component)
+│   ├── page.module.css     # Profile styles
+│   ├── ProfilePage.tsx     # Profile client component
+│   ├── globals.css         # Global styles
 │   ├── admin/
-│   │   └── achievements.js # Admin CRUD operations
-│   └── lib/
-│       ├── auth.js        # Authentication utilities
-│       └── achievements.js # Data storage layer
+│   │   ├── page.tsx        # Admin page
+│   │   ├── AdminPanel.tsx  # Admin client component
+│   │   └── admin.module.css
+│   └── api/
+│       ├── achievements/    # Public achievements API
+│       ├── auth/
+│       │   ├── login/       # Login endpoint
+│       │   ├── setup/       # Admin setup endpoint
+│       │   └── status/      # Auth status check
+│       └── admin/
+│           └── achievements/ # Admin CRUD operations
+├── lib/
+│   ├── auth.ts             # Authentication utilities
+│   └── achievements.ts     # Data storage layer
 ├── data/
-│   └── achievements.json  # Initial achievements data
-├── public/
-│   └── admin.html         # Admin panel UI
+│   └── achievements.json   # Initial achievements data
 ├── package.json
-├── vercel.json
+├── next.config.js
+├── tsconfig.json
 └── README.md
 ```
+
+## Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: CSS Modules
+- **Authentication**: JWT + bcrypt
+- **Storage**: Vercel KV (Redis) with in-memory fallback
 
 ## License
 
