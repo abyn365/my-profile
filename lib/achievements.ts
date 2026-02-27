@@ -1,3 +1,4 @@
+import { Redis } from '@upstash/redis'
 import achievementsData from '@/data/achievements.json'
 
 const ACHIEVEMENTS_KEY = 'achievements'
@@ -9,21 +10,23 @@ interface AdminData {
   createdAt: string
 }
 
-let kv: ReturnType<typeof import('@vercel/kv').createClient> | null = null
+let redis: Redis | null = null
 let cachedAchievements: AchievementsData | null = null
 let cachedAdmin: AdminData | null = null
 
-function getKV() {
-  if (kv) return kv
+function getRedis(): Redis | null {
+  if (redis) return redis
 
   try {
     if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-      const { kv: kvClient } = require('@vercel/kv')
-      kv = kvClient
-      return kv
+      redis = new Redis({
+        url: process.env.KV_REST_API_URL,
+        token: process.env.KV_REST_API_TOKEN
+      })
+      return redis
     }
   } catch {
-    console.log('KV not available, using in-memory storage')
+    console.log('Redis not available, using in-memory storage')
   }
 
   return null
@@ -39,17 +42,17 @@ function getInitialAchievements(): AchievementsData {
 }
 
 export async function getAchievements(): Promise<AchievementsData> {
-  const kvClient = getKV()
+  const client = getRedis()
 
   try {
-    if (kvClient) {
-      const achievements = await kvClient.get<AchievementsData>(ACHIEVEMENTS_KEY)
+    if (client) {
+      const achievements = await client.get<AchievementsData>(ACHIEVEMENTS_KEY)
       if (achievements) {
         return achievements
       }
     }
   } catch (error) {
-    console.error('KV read error:', error)
+    console.error('Redis read error:', error)
   }
 
   if (cachedAchievements) {
@@ -59,11 +62,11 @@ export async function getAchievements(): Promise<AchievementsData> {
   const initialData = getInitialAchievements()
   cachedAchievements = initialData
 
-  if (kvClient) {
+  if (client) {
     try {
-      await kvClient.set(ACHIEVEMENTS_KEY, initialData)
+      await client.set(ACHIEVEMENTS_KEY, initialData)
     } catch (error) {
-      console.error('KV write error:', error)
+      console.error('Redis write error:', error)
     }
   }
 
@@ -73,12 +76,12 @@ export async function getAchievements(): Promise<AchievementsData> {
 export async function setAchievements(achievements: AchievementsData): Promise<boolean> {
   cachedAchievements = achievements
 
-  const kvClient = getKV()
-  if (kvClient) {
+  const client = getRedis()
+  if (client) {
     try {
-      await kvClient.set(ACHIEVEMENTS_KEY, achievements)
+      await client.set(ACHIEVEMENTS_KEY, achievements)
     } catch (error) {
-      console.error('KV write error:', error)
+      console.error('Redis write error:', error)
     }
   }
 
@@ -137,13 +140,13 @@ export async function deleteAchievement(
 }
 
 export async function getAdmin(): Promise<AdminData | null> {
-  const kvClient = getKV()
+  const client = getRedis()
 
-  if (kvClient) {
+  if (client) {
     try {
-      return await kvClient.get<AdminData>(ADMIN_KEY)
+      return await client.get<AdminData>(ADMIN_KEY)
     } catch (error) {
-      console.error('KV read error:', error)
+      console.error('Redis read error:', error)
     }
   }
 
@@ -158,13 +161,13 @@ export async function setAdmin(hashedPassword: string): Promise<boolean> {
 
   cachedAdmin = adminData
 
-  const kvClient = getKV()
-  if (kvClient) {
+  const client = getRedis()
+  if (client) {
     try {
-      await kvClient.set(ADMIN_KEY, adminData)
+      await client.set(ADMIN_KEY, adminData)
       return true
     } catch (error) {
-      console.error('KV write error:', error)
+      console.error('Redis write error:', error)
     }
   }
 
