@@ -264,6 +264,13 @@ export default function ProfilePage({ achievements, grade, bio, birthday }: Prof
             <IconLink />
             Visit my links
           </a>
+
+          <div className={styles.scrollIndicator} data-aos="fade-up" data-aos-delay="300">
+            <span className={styles.scrollText}>Scroll to explore achievements</span>
+            <svg className={styles.scrollChevron} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </div>
         </div>
 
         <div className={styles.divider} data-aos="fade-up" data-aos-delay="250" />
