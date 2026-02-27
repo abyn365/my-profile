@@ -24,6 +24,24 @@ function calcAge() {
   return `${years} years, ${months} months, and ${days} days`
 }
 
+function IconLink() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  )
+}
+
+function IconMail() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  )
+}
+
 export default function ProfilePage({ achievements }: ProfilePageProps) {
   const [mounted, setMounted] = useState(false)
   const [isLightMode, setIsLightMode] = useState(false)
@@ -157,7 +175,7 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
             data-aos="zoom-in"
             data-aos-delay="200"
           >
-            <span className={styles.biolinksIcon}>🔗</span>
+            <IconLink />
             Visit my links
           </a>
         </div>
@@ -210,11 +228,12 @@ export default function ProfilePage({ achievements }: ProfilePageProps) {
 
       <a
         href="mailto:abyn@abyn.xyz"
+        target="_blank"
+        rel="noopener noreferrer"
         className={styles.contactButton}
-        data-aos="fade-left"
-        data-aos-delay="300"
       >
-        ✉ Contact Me
+        <IconMail />
+        Contact Me
       </a>
 
       <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />

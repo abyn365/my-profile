@@ -339,7 +339,7 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: rgba(20, 20, 20, 0.92);
+  background: var(--accent-color);
   color: #fff;
   padding: 11px 22px;
   border-radius: 50px;
@@ -347,27 +347,18 @@
   font-weight: 600;
   font-size: 0.9rem;
   z-index: 1000;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  border: none;
+  box-shadow: 0 4px 20px rgba(79, 195, 247, 0.35);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-:global(.light-mode) .contactButton {
-  background: rgba(255, 255, 255, 0.92);
-  color: #1a1a1a;
-  border-color: rgba(0, 0, 0, 0.1);
+  gap: 7px;
 }
 
 .contactButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
-  background: var(--accent-color);
-  color: #fff;
-  border-color: transparent;
+  box-shadow: 0 8px 28px rgba(79, 195, 247, 0.5);
+  filter: brightness(1.1);
 }
 
 /* ── Responsive ── */
