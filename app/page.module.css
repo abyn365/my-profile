@@ -153,7 +153,70 @@
   color: var(--text-secondary);
   max-width: 420px;
   line-height: 1.65;
-  margin: 0 0 28px;
+  margin: 0 0 8px;
+}
+
+/* ── Stats Row ── */
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 16px;
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.statCard:hover {
+  border-color: rgba(79, 195, 247, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+:global(.light-mode) .statCard {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+:global(.light-mode) .statCard:hover {
+  border-color: rgba(25, 118, 210, 0.25);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.statValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-color);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.ageLine {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+  opacity: 0.8;
 }
 
 .biolinksButton {
@@ -180,6 +243,42 @@
 
 .biolinksIcon {
   font-size: 1.1rem;
+}
+
+/* ── Scroll Indicator ── */
+.scrollIndicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+
+.scrollIndicator:hover {
+  color: var(--accent-color);
+}
+
+.scrollText {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.scrollChevron {
+  animation: bounce 1.5s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
 }
 
 /* ── Divider ── */
@@ -400,9 +499,35 @@
     font-size: 2rem;
   }
 
+  .statsRow {
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  .statCard {
+    padding: 8px 6px;
+  }
+
+  .statValue {
+    font-size: 0.95rem;
+  }
+
+  .statLabel {
+    font-size: 0.6rem;
+  }
+
   .biolinksButton {
     padding: 12px 22px;
     font-size: 0.95rem;
+  }
+
+  .scrollText {
+    font-size: 0.7rem;
+  }
+
+  .scrollChevron {
+    width: 18px;
+    height: 18px;
   }
 
   .contactButton {

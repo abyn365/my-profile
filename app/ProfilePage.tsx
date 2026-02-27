@@ -25,10 +25,11 @@ interface ProfilePageProps {
   achievements: Record<string, string[]>
   grade: string
   bio: string
+  birthday: string
 }
 
-function calcAge() {
-  const birthDate = new Date('2009-04-08')
+function calcAge(birthday: string) {
+  const birthDate = new Date(birthday)
   const now = new Date()
   let years = now.getFullYear() - birthDate.getFullYear()
   let months = now.getMonth() - birthDate.getMonth()
@@ -42,6 +43,15 @@ function calcAge() {
     months += 12
   }
   return `${years} years, ${months} months, and ${days} days`
+}
+
+function calcYearsActive(achievements: Record<string, string[]>) {
+  const years = Object.keys(achievements).length
+  return years
+}
+
+function calcTotalAchievements(achievements: Record<string, string[]>) {
+  return Object.values(achievements).reduce((sum, arr) => sum + arr.length, 0)
 }
 
 function getDiscordAvatar(userId: string, avatarId: string): string {
@@ -68,7 +78,7 @@ function IconMail() {
   )
 }
 
-export default function ProfilePage({ achievements, grade, bio }: ProfilePageProps) {
+export default function ProfilePage({ achievements, grade, bio, birthday }: ProfilePageProps) {
   const [mounted, setMounted] = useState(false)
   const [isLightMode, setIsLightMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -220,13 +230,29 @@ export default function ProfilePage({ achievements, grade, bio }: ProfilePagePro
             />
           </div>
           <h1>Abyan</h1>
-          <p className={styles.tagline}>
-            {grade}
+          <p className={styles.bio}>{bio}</p>
+
+          <p className={styles.ageLine} data-aos="fade-up" data-aos-delay="100">
             {mounted && (
-              <> · <span suppressHydrationWarning>{calcAge()}</span> old</>
+              <span suppressHydrationWarning>I'm {calcAge(birthday)} old</span>
             )}
           </p>
-          <p className={styles.bio}>{bio}</p>
+
+          <div className={styles.statsRow} data-aos="fade-up" data-aos-delay="150">
+            <div className={styles.statCard}>
+              <span className={styles.statValue}>{calcYearsActive(achievements)}</span>
+              <span className={styles.statLabel}>Years Active</span>
+            </div>
+            <div className={styles.statCard}>
+              <span className={styles.statValue}>{calcTotalAchievements(achievements)}</span>
+              <span className={styles.statLabel}>Achievements</span>
+            </div>
+            <div className={styles.statCard}>
+              <span className={styles.statValue}>{grade}</span>
+              <span className={styles.statLabel}>Current Grade</span>
+            </div>
+          </div>
+
           <a
             href="https://abyn.xyz"
             target="_blank"
@@ -238,9 +264,16 @@ export default function ProfilePage({ achievements, grade, bio }: ProfilePagePro
             <IconLink />
             Visit my links
           </a>
+
+          <div className={styles.scrollIndicator} data-aos="fade-up" data-aos-delay="300">
+            <span className={styles.scrollText}>Scroll to explore achievements</span>
+            <svg className={styles.scrollChevron} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </div>
         </div>
 
-        <div className={styles.divider} data-aos="fade-up" data-aos-delay="100" />
+        <div className={styles.divider} data-aos="fade-up" data-aos-delay="250" />
 
         <div className={styles.searchContainer} data-aos="fade-up" data-aos-delay="150">
           <span className={styles.searchIcon}>🔍</span>
