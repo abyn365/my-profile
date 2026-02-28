@@ -7,6 +7,11 @@ interface AchievementsData {
   [year: string]: string[]
 }
 
+interface FilteredAchievement {
+  text: string
+  index: number
+}
+
 export default function AdminPanel() {
   const [token, setToken] = useState<string | null>(null)
   const [setupRequired, setSetupRequired] = useState(false)
@@ -33,9 +38,18 @@ export default function AdminPanel() {
   const [newYear, setNewYear] = useState(String(new Date().getFullYear()))
   const [newAchievement, setNewAchievement] = useState('')
 
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('')
+  const [yearFilter, setYearFilter] = useState('all')
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set())
+
+  // Bulk editor states
+  const [bulkJson, setBulkJson] = useState('')
+
   // Modal states
   const [editModal, setEditModal] = useState<{ year: string; index: number; text: string } | null>(null)
   const [deleteModal, setDeleteModal] = useState<{ year: string; index: number; text: string } | null>(null)
+  const [deleteYearModal, setDeleteYearModal] = useState<{ year: string; count: number } | null>(null)
 
   const passwordRequirements = {
     length: setupPassword.length >= 8,
@@ -114,6 +128,15 @@ export default function AdminPanel() {
 
   useEffect(() => { checkAuthStatus() }, [checkAuthStatus])
   useEffect(() => { if (isAuthenticated) loadData() }, [isAuthenticated, loadData])
+  useEffect(() => {
+    setExpandedYears((prev) => {
+      const next = new Set<string>()
+      Object.keys(achievements).forEach((year) => {
+        if (prev.has(year)) next.add(year)
+      })
+      return next
+    })
+  }, [achievements])
 
   const notify = (msg: string) => {
     setSuccess(msg)
@@ -218,12 +241,14 @@ export default function AdminPanel() {
 
   const handleAddAchievement = async (e: React.FormEvent) => {
     e.preventDefault()
+    const trimmedAchievement = newAchievement.trim()
+    if (!trimmedAchievement) { setError('Achievement cannot be empty'); return }
     setError(null)
     try {
       const res = await fetch('/api/admin/achievements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ year: newYear, achievement: newAchievement })
+        body: JSON.stringify({ year: newYear, achievement: trimmedAchievement })
       })
       const data = await res.json()
       if (!res.ok) { setError(data.message || 'Failed to add achievement'); return }
@@ -268,8 +293,160 @@ export default function AdminPanel() {
     } catch { setError('Failed to delete achievement') }
   }
 
+  const handleDeleteYear = async () => {
+    if (!deleteYearModal || !token) return
+    setError(null)
+    try {
+      const updatedAchievements = { ...achievements }
+      delete updatedAchievements[deleteYearModal.year]
+
+      const res = await fetch('/api/admin/achievements', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ achievements: updatedAchievements })
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.message || 'Failed to delete year'); return }
+      setAchievements(data.data)
+      setDeleteYearModal(null)
+      notify('Year removed!')
+    } catch { setError('Failed to delete year') }
+  }
+
+  const validateAchievementsPayload = (data: unknown): data is AchievementsData => {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return false
+
+    return Object.entries(data as Record<string, unknown>).every(([year, items]) => {
+      if (!/^\d{4}$/.test(year)) return false
+      if (!Array.isArray(items)) return false
+      return items.every((item) => typeof item === 'string')
+    })
+  }
+
+  const normalizeAchievementsPayload = (data: AchievementsData): AchievementsData => {
+    const normalized: AchievementsData = {}
+    for (const [year, items] of Object.entries(data)) {
+      const cleaned = items.map((item) => item.trim()).filter(Boolean)
+      normalized[year] = cleaned
+    }
+    return normalized
+  }
+
+  const handleBulkUpdate = async () => {
+    if (!token) return
+    setError(null)
+
+    if (!bulkJson.trim()) {
+      setError('Bulk editor is empty. Paste or load JSON to continue.')
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(bulkJson)
+      if (!validateAchievementsPayload(parsed)) {
+        setError('Bulk JSON must be a year-to-achievements map with arrays of strings.')
+        return
+      }
+
+      const normalized = normalizeAchievementsPayload(parsed)
+
+      const res = await fetch('/api/admin/achievements', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ achievements: normalized })
+      })
+      const data = await res.json()
+      if (!res.ok) { setError(data.message || 'Failed to update achievements'); return }
+      setAchievements(data.data)
+      setBulkJson(JSON.stringify(data.data, null, 2))
+      notify('Achievements updated in bulk!')
+    } catch (err) {
+      console.error(err)
+      setError('Invalid JSON format. Please check your bulk data.')
+    }
+  }
+
+  const handleBulkLoad = () => {
+    setBulkJson(JSON.stringify(achievements, null, 2))
+  }
+
+  const handleBulkClear = () => {
+    setBulkJson('')
+  }
+
+  const handleCopyJson = async () => {
+    const payload = bulkJson.trim() || JSON.stringify(achievements, null, 2)
+    try {
+      await navigator.clipboard.writeText(payload)
+      notify('JSON copied to clipboard!')
+    } catch {
+      setError('Failed to copy JSON. Please copy it manually.')
+    }
+  }
+
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setBulkJson(reader.result)
+        notify('File loaded into bulk editor.')
+      } else {
+        setError('Unable to read the file contents.')
+      }
+    }
+    reader.onerror = () => setError('Failed to read the uploaded file.')
+    reader.readAsText(file)
+    event.target.value = ''
+  }
+
+  const toggleYear = (year: string) => {
+    setExpandedYears((prev) => {
+      const next = new Set(prev)
+      if (next.has(year)) {
+        next.delete(year)
+      } else {
+        next.add(year)
+      }
+      return next
+    })
+  }
+
+  const handleClearFilters = () => {
+    setSearchTerm('')
+    setYearFilter('all')
+  }
+
   const sortedYears = Object.keys(achievements).sort((a, b) => parseInt(b) - parseInt(a))
   const totalAchievements = sortedYears.reduce((sum, y) => sum + achievements[y].length, 0)
+
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+  const isFiltering = normalizedSearch.length > 0 || yearFilter !== 'all'
+
+  const filteredAchievements = Object.entries(achievements).reduce(
+    (acc, [year, items]) => {
+      if (yearFilter !== 'all' && year !== yearFilter) return acc
+
+      const filteredItems = items
+        .map((text, index) => ({ text, index }))
+        .filter(({ text }) => (normalizedSearch ? text.toLowerCase().includes(normalizedSearch) : true))
+
+      if (filteredItems.length > 0) {
+        acc[year] = filteredItems
+      }
+
+      return acc
+    },
+    {} as Record<string, FilteredAchievement[]>
+  )
+
+  const filteredYears = Object.keys(filteredAchievements).sort((a, b) => parseInt(b) - parseInt(a))
+  const totalFilteredAchievements = filteredYears.reduce(
+    (sum, year) => sum + filteredAchievements[year].length,
+    0
+  )
 
   if (loading) {
     return (
@@ -389,6 +566,12 @@ export default function AdminPanel() {
             <span className={styles.statValue}>{grade || '—'}</span>
             <span className={styles.statLabel}>Current Grade</span>
           </div>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>
+              {isFiltering ? `${totalFilteredAchievements} / ${totalAchievements}` : totalAchievements}
+            </span>
+            <span className={styles.statLabel}>Showing</span>
+          </div>
         </div>
 
         <section className={styles.section}>
@@ -469,40 +652,103 @@ export default function AdminPanel() {
         </section>
 
         <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Search & Filters</h2>
+          <div className={styles.card}>
+            <div className={styles.filterRow}>
+              <div className={`${styles.field} ${styles.filterField}`}>
+                <label>Search achievements</label>
+                <input
+                  type="search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by keyword..."
+                />
+              </div>
+              <div className={styles.field}>
+                <label>Year</label>
+                <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
+                  <option value="all">All years</option>
+                  {sortedYears.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.filterActions}>
+                <button type="button" className={styles.btnGhost} onClick={handleClearFilters}>Reset</button>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => setExpandedYears(new Set(filteredYears))}
+                >
+                  Expand All
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  onClick={() => setExpandedYears(new Set())}
+                >
+                  Collapse All
+                </button>
+              </div>
+            </div>
+            <p className={styles.filterSummary}>
+              {filteredYears.length === 0
+                ? 'No achievements match the current filters.'
+                : `Showing ${totalFilteredAchievements} achievements across ${filteredYears.length} years${isFiltering ? ' (filtered).' : '.'}`}
+            </p>
+          </div>
+        </section>
+
+        <section className={styles.section}>
           <h2 className={styles.sectionTitle}>All Achievements</h2>
-          {sortedYears.length === 0 ? (
-            <div className={styles.empty}>No achievements yet. Add your first one above.</div>
+          {filteredYears.length === 0 ? (
+            <div className={styles.empty}>
+              {isFiltering
+                ? 'No achievements match the current filters. Try adjusting your search.'
+                : 'No achievements yet. Add your first one above.'}
+            </div>
           ) : (
             <div className={styles.yearList}>
-              {sortedYears.map((year) => (
+              {filteredYears.map((year) => (
                 <div key={year} className={styles.yearCard}>
-                  <button
-                    className={styles.yearToggle}
-                    onClick={() => {
-                      const el = document.getElementById(`year-${year}`)
-                      el?.classList.toggle(styles.open)
-                    }}
-                  >
-                    <div className={styles.yearToggleLeft}>
-                      <span className={styles.yearLabel}>{year}</span>
-                      <span className={styles.yearCount}>{achievements[year].length}</span>
+                  <div className={styles.yearHeader}>
+                    <button
+                      className={styles.yearToggle}
+                      onClick={() => toggleYear(year)}
+                    >
+                      <div className={styles.yearToggleLeft}>
+                        <span className={styles.yearLabel}>{year}</span>
+                        <span className={styles.yearCount}>
+                          {isFiltering
+                            ? `${filteredAchievements[year].length} / ${achievements[year].length}`
+                            : achievements[year].length}
+                        </span>
+                      </div>
+                      <svg className={`${styles.chevron} ${expandedYears.has(year) ? styles.chevronOpen : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div className={styles.yearActions}>
+                      <button
+                        className={styles.btnYearDelete}
+                        onClick={() => setDeleteYearModal({ year, count: achievements[year].length })}
+                      >
+                        Delete Year
+                      </button>
                     </div>
-                    <svg className={styles.chevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                  </button>
-                  <div id={`year-${year}`} className={styles.yearItems}>
-                    {achievements[year].map((achievement, index) => (
-                      <div key={index} className={styles.achievementRow}>
-                        <span className={styles.achievementText}>{achievement}</span>
+                  </div>
+                  <div className={`${styles.yearItems} ${expandedYears.has(year) ? styles.open : ''}`}>
+                    {filteredAchievements[year].map(({ text, index }) => (
+                      <div key={`${year}-${index}`} className={styles.achievementRow}>
+                        <span className={styles.achievementText}>{text}</span>
                         <div className={styles.rowActions}>
                           <button
                             className={styles.btnEdit}
-                            onClick={() => setEditModal({ year, index, text: achievement })}
+                            onClick={() => setEditModal({ year, index, text })}
                           >
                             Edit
                           </button>
                           <button
                             className={styles.btnDelete}
-                            onClick={() => setDeleteModal({ year, index, text: achievement })}
+                            onClick={() => setDeleteModal({ year, index, text })}
                           >
                             Delete
                           </button>
@@ -514,6 +760,38 @@ export default function AdminPanel() {
               ))}
             </div>
           )}
+        </section>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Bulk Editor</h2>
+          <div className={styles.card}>
+            <p className={styles.helperText}>
+              Paste JSON to replace your achievements, or load the current data to make quick edits.
+            </p>
+            <div className={styles.bulkControls}>
+              <button type="button" className={styles.btnGhost} onClick={handleBulkLoad}>Load Current Data</button>
+              <button type="button" className={styles.btnGhost} onClick={handleCopyJson}>Copy JSON</button>
+              <label className={styles.fileButton}>
+                <input
+                  type="file"
+                  accept="application/json"
+                  onChange={handleFileImport}
+                />
+                Import JSON
+              </label>
+            </div>
+            <textarea
+              className={styles.bulkTextarea}
+              value={bulkJson}
+              onChange={(e) => setBulkJson(e.target.value)}
+              placeholder={`{\n  "2024": ["Achievement one"],\n  "2023": ["Achievement two"]\n}`}
+              rows={8}
+            />
+            <div className={styles.bulkActions}>
+              <button type="button" className={styles.btnDanger} onClick={handleBulkClear}>Clear</button>
+              <button type="button" className={styles.btnPrimary} onClick={handleBulkUpdate}>Apply Updates</button>
+            </div>
+          </div>
         </section>
       </div>
 
@@ -549,6 +827,24 @@ export default function AdminPanel() {
             <div className={styles.modalActions}>
               <button className={styles.btnGhost} onClick={() => setDeleteModal(null)}>Cancel</button>
               <button className={styles.btnDanger} onClick={handleDeleteAchievement}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteYearModal && (
+        <div className={styles.overlay} onClick={() => setDeleteYearModal(null)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Year</h3>
+            <p className={styles.modalBody}>
+              This will permanently remove all achievements for {deleteYearModal.year}.
+            </p>
+            <p className={styles.deletePreview}>
+              {deleteYearModal.count} achievements will be deleted.
+            </p>
+            <div className={styles.modalActions}>
+              <button className={styles.btnGhost} onClick={() => setDeleteYearModal(null)}>Cancel</button>
+              <button className={styles.btnDanger} onClick={handleDeleteYear}>Delete Year</button>
             </div>
           </div>
         </div>
