@@ -11,7 +11,7 @@ A personal profile website with a comprehensive admin panel for managing achieve
 - 📱 Responsive design with dark/light mode
 - ⚡ Next.js App Router with Server Components
 - 🎨 Animated particles and smooth transitions
-- 📊 Admin dashboard with statistics overview
+- 📊 Admin dashboard with filters, bulk tools, and statistics overview
 
 ## Quick Start
 
@@ -77,12 +77,20 @@ The admin panel (`/admin`) provides a complete interface for managing your profi
 - **Add**: Create new achievements with year selection
 - **Edit**: Modify existing achievements via modal dialog
 - **Delete**: Remove achievements with confirmation dialog
+- **Delete Year**: Remove an entire year’s achievements in one action
 - **Organize**: Achievements are grouped by year in collapsible sections
+
+### Search, Filters, and Bulk Tools
+- **Search**: Quickly find achievements by keyword
+- **Year Filter**: Focus on a specific year’s entries
+- **Expand/Collapse**: Toggle all year sections at once
+- **Bulk Editor**: Load, edit, import, and apply JSON updates for achievements
 
 ### Dashboard Statistics
 - Total years with achievements
 - Total achievement count
 - Current grade display
+- Filtered totals when searching
 
 ## API Endpoints
 
